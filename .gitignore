@@ -1,5 +1,6 @@
 # Build directory
 bin/
+obj/
 
 # Ninja
 .ninja_log
