@@ -14,11 +14,8 @@ SDL_Window* window;
 SDL_Renderer* renderer;
 
 SDL_Surface* background;
-SDL_Surface* snake[14];
+SDL_Surface* snakeImg[14];
 SDL_Texture* snakeTex[14];
-
-void DrawBackground(SDL_Surface*);
-void DrawSnake(SDL_Surface*);
 
 struct TexObject {
   int x;
@@ -26,6 +23,8 @@ struct TexObject {
   // Width and height is assumed to be 44x44
   SDL_Texture* texture;
 };
+
+void DrawSnake(SDL_Surface*, struct TexObject*);
 
 int SDL_main(int argc, char** argv){
     
@@ -37,28 +36,40 @@ int SDL_main(int argc, char** argv){
   // Load images
   background = SDL_LoadBMP("res/gfx/grid.bmp");
 
-  snake[0] = SDL_LoadBMP("res/gfx/head-n.bmp");
-  snake[1] = SDL_LoadBMP("res/gfx/head-e.bmp");
-  snake[2] = SDL_LoadBMP("res/gfx/head-s.bmp"); 
-  snake[3] = SDL_LoadBMP("res/gfx/head-w.bmp");
-  snake[4] = SDL_LoadBMP("res/gfx/body-h.bmp");
-  snake[5] = SDL_LoadBMP("res/gfx/body-v.bmp");
-  snake[6] = SDL_LoadBMP("res/gfx/body-ne.bmp");
-  snake[7] = SDL_LoadBMP("res/gfx/body-se.bmp");
-  snake[8] = SDL_LoadBMP("res/gfx/body-sw.bmp");
-  snake[9] = SDL_LoadBMP("res/gfx/body-nw.bmp");
-  snake[10] = SDL_LoadBMP("res/gfx/tail-n.bmp");
-  snake[11] = SDL_LoadBMP("res/gfx/tail-e.bmp");
-  snake[12] = SDL_LoadBMP("res/gfx/tail-s.bmp");
-  snake[13] = SDL_LoadBMP("res/gfx/tail-w.bmp");
+  snakeImg[0] = SDL_LoadBMP("res/gfx/head-n.bmp");
+  snakeImg[1] = SDL_LoadBMP("res/gfx/head-e.bmp");
+  snakeImg[2] = SDL_LoadBMP("res/gfx/head-s.bmp"); 
+  snakeImg[3] = SDL_LoadBMP("res/gfx/head-w.bmp");
+  snakeImg[4] = SDL_LoadBMP("res/gfx/body-h.bmp");
+  snakeImg[5] = SDL_LoadBMP("res/gfx/body-v.bmp");
+  snakeImg[6] = SDL_LoadBMP("res/gfx/body-ne.bmp");
+  snakeImg[7] = SDL_LoadBMP("res/gfx/body-se.bmp");
+  snakeImg[8] = SDL_LoadBMP("res/gfx/body-sw.bmp");
+  snakeImg[9] = SDL_LoadBMP("res/gfx/body-nw.bmp");
+  snakeImg[10] = SDL_LoadBMP("res/gfx/tail-n.bmp");
+  snakeImg[11] = SDL_LoadBMP("res/gfx/tail-e.bmp");
+  snakeImg[12] = SDL_LoadBMP("res/gfx/tail-s.bmp");
+  snakeImg[13] = SDL_LoadBMP("res/gfx/tail-w.bmp");
 
-  // Background
   SDL_Texture* testTex = SDL_CreateTextureFromSurface(renderer, background);   
   
   // Create textures from the SDL_Surfaces
   for(int i = 0; i < 14; i++) {
-    snakeTex[i] = SDL_CreateTextureFromSurface(renderer, snake[i]);  
+    snakeTex[i] = SDL_CreateTextureFromSurface(renderer, snakeImg[i]);  
   }
+
+  struct TexObject snake[3];
+  snake[0].x = 0;
+  snake[0].y = 0;
+  snake[0].texture = snakeTex[0];
+
+  snake[1].x = 0;
+  snake[1].y = 44;
+  snake[1].texture = snakeTex[5];
+  
+  snake[2].x = 0;
+  snake[2].y = 88;
+  snake[2].texture = snakeTex[10];
 
   SDL_Surface* ws = SDL_GetWindowSurface(window);
 
@@ -71,16 +82,18 @@ int SDL_main(int argc, char** argv){
         doRender = 0;
         break;
     }
-
-    DrawBackground(ws);
-    DrawSnake(ws);
+    SDL_Rect rect = { 0, 0, 880, 880};
+    SDL_RenderCopy(renderer, testTex, NULL, &rect);
+    SDL_RenderPresent(renderer);
+    
+    DrawSnake(ws, snake);
   }
 
   SDL_DestroyTexture(testTex);
   // Free surfaces and textures on exit
   for(int i = 0; i < 14; i++) {
     SDL_DestroyTexture(snakeTex[i]);
-    SDL_FreeSurface(snake[i]);
+    SDL_FreeSurface(snakeImg[i]);
   }
   SDL_DestroyRenderer(renderer);
   SDL_DestroyWindow(window);
@@ -90,15 +103,14 @@ int SDL_main(int argc, char** argv){
   return 0;
 }
 
-void DrawBackground(SDL_Surface* surface) {
+void DrawSnake(SDL_Surface* surface, struct TexObject* snake) {
+    
+  for(int i = 0; i < 3; i++) {
+    SDL_Rect rect = { snake[i].x, snake[i].y, 44, 44 };
+    SDL_RenderCopy(renderer, snake[i].texture, NULL, &rect);
+    SDL_RenderPresent(renderer);
+  }
 
-  SDL_Rect rect = { 0, 0, 880, 880};
-  SDL_RenderCopy(renderer, testTex, NULL, &rect);
-  SDL_RenderPresent(renderer);
-}
-
-void DrawSnake(SDL_Surface* surface) {
-  
 }
 
 
