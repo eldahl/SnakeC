@@ -1,10 +1,14 @@
+#include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include "lib/include/SDL2/SDL.h"
 #include "lib/include/SDL2/SDL_error.h"
 #include "lib/include/SDL2/SDL_events.h"
 #include "lib/include/SDL2/SDL_hints.h"
+#include "lib/include/SDL2/SDL_keycode.h"
 #include "lib/include/SDL2/SDL_rect.h"
 #include "lib/include/SDL2/SDL_render.h"
+#include "lib/include/SDL2/SDL_stdinc.h"
 #include "lib/include/SDL2/SDL_surface.h"
 #include "lib/include/SDL2/SDL_video.h"
 
@@ -17,14 +21,24 @@ SDL_Surface* background;
 SDL_Surface* snakeImg[14];
 SDL_Texture* snakeTex[14];
 
+int grid_size = 44;
+
+// Width and height is assumed to be 44x44
 struct TexObject {
   int x;
   int y;
-  // Width and height is assumed to be 44x44
   SDL_Texture* texture;
 };
 
-void DrawSnake(SDL_Surface*, struct TexObject*);
+// Holds the snake body parts
+struct TexObject snake[400];
+size_t snakeSize;
+
+// Surface to render to, snake parts array, length of snake array
+void DrawSnake(SDL_Surface*, struct TexObject*, size_t);
+
+// delta x, delta y, snake parts array, length of snake array
+int MoveSnake(int dx, int dy, struct TexObject*, size_t);
 
 int SDL_main(int argc, char** argv){
     
@@ -51,25 +65,23 @@ int SDL_main(int argc, char** argv){
   snakeImg[12] = SDL_LoadBMP("res/gfx/tail-s.bmp");
   snakeImg[13] = SDL_LoadBMP("res/gfx/tail-w.bmp");
 
-  SDL_Texture* testTex = SDL_CreateTextureFromSurface(renderer, background);   
+  SDL_Texture* backgroundTex = SDL_CreateTextureFromSurface(renderer, background);   
   
   // Create textures from the SDL_Surfaces
   for(int i = 0; i < 14; i++) {
     snakeTex[i] = SDL_CreateTextureFromSurface(renderer, snakeImg[i]);  
   }
 
-  struct TexObject snake[3];
   snake[0].x = 0;
   snake[0].y = 0;
   snake[0].texture = snakeTex[0];
-
   snake[1].x = 0;
-  snake[1].y = 44;
+  snake[1].y = 1;
   snake[1].texture = snakeTex[5];
-  
   snake[2].x = 0;
-  snake[2].y = 88;
+  snake[2].y = 2;
   snake[2].texture = snakeTex[10];
+  snakeSize = 3;
 
   SDL_Surface* ws = SDL_GetWindowSurface(window);
 
@@ -78,18 +90,33 @@ int SDL_main(int argc, char** argv){
     SDL_WaitEvent(&event);
     
     switch (event.type) {
+      case SDL_KEYDOWN:
+        if(event.key.keysym.sym == SDLK_UP) {
+          MoveSnake(0, -1, snake, snakeSize);
+        }
+        if(event.key.keysym.sym == SDLK_DOWN) {
+          MoveSnake(0, 1, snake, snakeSize);
+        }
+        if(event.key.keysym.sym == SDLK_LEFT) {
+          MoveSnake(-1, 0, snake, snakeSize);
+        }
+        if(event.key.keysym.sym == SDLK_RIGHT) {
+          MoveSnake(1, 0, snake, snakeSize);
+        }
+        break;
+
       case SDL_QUIT:
         doRender = 0;
         break;
     }
     SDL_Rect rect = { 0, 0, 880, 880};
-    SDL_RenderCopy(renderer, testTex, NULL, &rect);
+    SDL_RenderCopy(renderer, backgroundTex, NULL, &rect);
     SDL_RenderPresent(renderer);
     
-    DrawSnake(ws, snake);
+    DrawSnake(ws, snake, snakeSize);
   }
 
-  SDL_DestroyTexture(testTex);
+  SDL_DestroyTexture(backgroundTex);
   // Free surfaces and textures on exit
   for(int i = 0; i < 14; i++) {
     SDL_DestroyTexture(snakeTex[i]);
@@ -103,14 +130,36 @@ int SDL_main(int argc, char** argv){
   return 0;
 }
 
-void DrawSnake(SDL_Surface* surface, struct TexObject* snake) {
-    
-  for(int i = 0; i < 3; i++) {
-    SDL_Rect rect = { snake[i].x, snake[i].y, 44, 44 };
+void DrawSnake(SDL_Surface* surface, struct TexObject* snake, size_t sSize) {
+
+  for(int i = 0; i < sSize; i++) {
+    SDL_Rect rect = { snake[i].x * grid_size, snake[i].y * grid_size, 44, 44 };
     SDL_RenderCopy(renderer, snake[i].texture, NULL, &rect);
     SDL_RenderPresent(renderer);
   }
 
 }
 
+// Returns -1 for snake biting itself, 1 for valid movement
+int MoveSnake(int dx, int dy, struct TexObject* snake, size_t sSize) {
+  
+  // Check if next head position is valid
+  int newX = snake[0].x + dx;
+  int newY = snake[0].y + dy;
+  
+  for(int i = 0; i < sSize; i++) {
+    if(snake[i].x == newX && snake[i].y == newY) {
+      return -1;
+    }
+  }
+  
+  // Iterate through and 
+  //    - Move each part of the snake
+  //    - Set each part of the snake to the correct texture
+  //for(int i = 0; i < sSize)
+  snake[0].x = newX;
+  snake[0].y = newY;
+  return 1;
 
+
+}
