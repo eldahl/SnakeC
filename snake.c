@@ -38,7 +38,7 @@ size_t snakeSize;
 void DrawSnake(SDL_Surface*, struct TexObject*, size_t);
 
 // delta x, delta y, snake parts array, length of snake array
-int MoveSnake(int dx, int dy, struct TexObject*, size_t);
+int MoveSnakeBody(int dx, int dy, struct TexObject*, size_t);
 
 int SDL_main(int argc, char** argv){
     
@@ -92,16 +92,16 @@ int SDL_main(int argc, char** argv){
     switch (event.type) {
       case SDL_KEYDOWN:
         if(event.key.keysym.sym == SDLK_UP) {
-          MoveSnake(0, -1, snake, snakeSize);
+          MoveSnakeBody(0, -1, snake, snakeSize);
         }
         if(event.key.keysym.sym == SDLK_DOWN) {
-          MoveSnake(0, 1, snake, snakeSize);
+          MoveSnakeBody(0, 1, snake, snakeSize);
         }
         if(event.key.keysym.sym == SDLK_LEFT) {
-          MoveSnake(-1, 0, snake, snakeSize);
+          MoveSnakeBody(-1, 0, snake, snakeSize);
         }
         if(event.key.keysym.sym == SDLK_RIGHT) {
-          MoveSnake(1, 0, snake, snakeSize);
+          MoveSnakeBody(1, 0, snake, snakeSize);
         }
         break;
 
@@ -141,7 +141,7 @@ void DrawSnake(SDL_Surface* surface, struct TexObject* snake, size_t sSize) {
 }
 
 // Returns -1 for snake biting itself, 1 for valid movement
-int MoveSnake(int dx, int dy, struct TexObject* snake, size_t sSize) {
+int MoveSnakeBody(int dx, int dy, struct TexObject* snake, size_t sSize) {
   
   // Check if next head position is valid
   int newX = snake[0].x + dx;
@@ -153,10 +153,31 @@ int MoveSnake(int dx, int dy, struct TexObject* snake, size_t sSize) {
     }
   }
   
+  /*
+  if(CheckHeadCollision() == -1) {
+    GameOver();
+  }
+  
+  if(!atefruit) {
+    MoveSnakeHead();
+    MoveSnakeBody();
+  }
+  else {
+    MoveSnakeHead();
+  }
+
+  RecalculateSnakeGraphics();
+  */
   // Iterate through and 
   //    - Move each part of the snake
   //    - Set each part of the snake to the correct texture
-  //for(int i = 0; i < sSize)
+
+  // Situation 1:
+  //    Snake ate food, and grows by one leaving the body at same position.
+
+  // Situation 2:
+  //    Snake didn't eat food, and body moves one position forward.
+
   snake[0].x = newX;
   snake[0].y = newY;
   return 1;
