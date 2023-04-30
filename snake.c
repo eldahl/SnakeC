@@ -12,12 +12,19 @@
 #include "lib/include/SDL2/SDL_surface.h"
 #include "lib/include/SDL2/SDL_video.h"
 
-int doRender = 1;
+#include <windows.h>
+
+int doGameLoop = 1;
 
 SDL_Window* window;
 SDL_Renderer* renderer;
 
+SDL_Surface* apple;
+SDL_Texture* appleTex;
+
 SDL_Surface* background;
+SDL_Texture* backgroundTex;
+
 SDL_Surface* snakeImg[14];
 SDL_Texture* snakeTex[14];
 
@@ -34,14 +41,26 @@ struct TexObject {
 struct TexObject snake[400];
 size_t snakeSize;
 
+struct TexObject food;
+
 // Surface to render to, snake parts array, length of snake array
 void DrawSnake(SDL_Surface*, struct TexObject*, size_t);
 
-// delta x, delta y, snake parts array, length of snake array
-int MoveSnakeBody(int dx, int dy, struct TexObject*, size_t);
+// Checks for snake head collisions
+int CheckHeadCollision(int, int, struct TexObject*, size_t, struct TexObject*);
 
-int SDL_main(int argc, char** argv){
-    
+void MoveSnakeHead(int dx, int dy, struct TexObject*, size_t);
+// delta x, delta y, snake parts array, length of snake array
+void MoveSnakeBody(int dx, int dy, struct TexObject*, size_t);
+
+int SDL_main(int argc, char** argv) {
+  
+  if (AllocConsole())
+  {
+    FILE* fi = 0;
+    freopen_s(&fi, "CONOUT$", "w", stdout);
+  }
+
   if(SDL_CreateWindowAndRenderer(880, 880, 0, &window, &renderer) == -1) {
     printf("Failed to create renderer and window...!: ");
 		return 0;
@@ -49,6 +68,8 @@ int SDL_main(int argc, char** argv){
 
   // Load images
   background = SDL_LoadBMP("res/gfx/grid.bmp");
+
+  apple = SDL_LoadBMP("res/gfx/apple.bmp");
 
   snakeImg[0] = SDL_LoadBMP("res/gfx/head-n.bmp");
   snakeImg[1] = SDL_LoadBMP("res/gfx/head-e.bmp");
@@ -64,14 +85,17 @@ int SDL_main(int argc, char** argv){
   snakeImg[11] = SDL_LoadBMP("res/gfx/tail-e.bmp");
   snakeImg[12] = SDL_LoadBMP("res/gfx/tail-s.bmp");
   snakeImg[13] = SDL_LoadBMP("res/gfx/tail-w.bmp");
-
-  SDL_Texture* backgroundTex = SDL_CreateTextureFromSurface(renderer, background);   
   
-  // Create textures from the SDL_Surfaces
+  // Textures
+  backgroundTex = SDL_CreateTextureFromSurface(renderer, background);   
+  appleTex = SDL_CreateTextureFromSurface(renderer, apple);
+  
+  // Create Snake textures from the SDL_Surfaces
   for(int i = 0; i < 14; i++) {
     snakeTex[i] = SDL_CreateTextureFromSurface(renderer, snakeImg[i]);  
   }
-
+  
+  // Starting snake
   snake[0].x = 0;
   snake[0].y = 0;
   snake[0].texture = snakeTex[0];
@@ -83,37 +107,76 @@ int SDL_main(int argc, char** argv){
   snake[2].texture = snakeTex[10];
   snakeSize = 3;
 
+  // Set a starting food
+  food.x = 5;
+  food.y = 5;
+  food.texture = appleTex;
+
   SDL_Surface* ws = SDL_GetWindowSurface(window);
 
   SDL_Event event;
-  while(doRender) {
+  while(doGameLoop) {
     SDL_WaitEvent(&event);
     
+    int dx = 0, dy = 0;
     switch (event.type) {
       case SDL_KEYDOWN:
         if(event.key.keysym.sym == SDLK_UP) {
-          MoveSnakeBody(0, -1, snake, snakeSize);
+          //MoveSnakeBody(0, -1, snake, snakeSize);
+          dy = -1;
         }
         if(event.key.keysym.sym == SDLK_DOWN) {
-          MoveSnakeBody(0, 1, snake, snakeSize);
+          //MoveSnakeBody(0, 1, snake, snakeSize);
+          dy = 1;
         }
         if(event.key.keysym.sym == SDLK_LEFT) {
-          MoveSnakeBody(-1, 0, snake, snakeSize);
+          //MoveSnakeBody(-1, 0, snake, snakeSize);
+          dx = -1;
         }
         if(event.key.keysym.sym == SDLK_RIGHT) {
-          MoveSnakeBody(1, 0, snake, snakeSize);
+          //MoveSnakeBody(1, 0, snake, snakeSize);
+          dx = 1;
         }
         break;
 
       case SDL_QUIT:
-        doRender = 0;
+        doGameLoop = 0;
         break;
     }
+
+    // Check if head colides with the snake body
+    if(!(dx == 0 && dy == 0)) {
+        int hit = CheckHeadCollision(dx, dy, snake, snakeSize, &food);
+        printf("snake hit: %d\n", hit);
+        // Hit nothing
+        if(hit == 0) {
+          //MoveSnakeHead();
+          MoveSnakeBody(dx, dy, snake, snakeSize);
+        }
+        // Hit a piece food
+        else if(hit == 1) {
+          //MoveSnakeHead();
+          printf("Ate food\n");
+        }
+        // Hit the snake body
+        //else {
+          // Gameover();  
+
+        //}
+
+        //RecalculateSnakeGraphics();
+    }
+
+    // Render background
     SDL_Rect rect = { 0, 0, 880, 880};
     SDL_RenderCopy(renderer, backgroundTex, NULL, &rect);
     SDL_RenderPresent(renderer);
     
     DrawSnake(ws, snake, snakeSize);
+
+    SDL_Rect rectFood = { food.x * grid_size, food.y * grid_size, 44, 44};
+    SDL_RenderCopy(renderer, food.texture, NULL, &rectFood);
+    SDL_RenderPresent(renderer);
   }
 
   SDL_DestroyTexture(backgroundTex);
@@ -140,34 +203,32 @@ void DrawSnake(SDL_Surface* surface, struct TexObject* snake, size_t sSize) {
 
 }
 
-// Returns -1 for snake biting itself, 1 for valid movement
-int MoveSnakeBody(int dx, int dy, struct TexObject* snake, size_t sSize) {
-  
+int CheckHeadCollision(int dx, int dy, struct TexObject* snake, size_t sSize, struct TexObject* food) {
   // Check if next head position is valid
   int newX = snake[0].x + dx;
   int newY = snake[0].y + dy;
   
+  // Hit the snake body
   for(int i = 0; i < sSize; i++) {
     if(snake[i].x == newX && snake[i].y == newY) {
       return -1;
     }
   }
-  
-  /*
-  if(CheckHeadCollision() == -1) {
-    GameOver();
-  }
-  
-  if(!atefruit) {
-    MoveSnakeHead();
-    MoveSnakeBody();
-  }
-  else {
-    MoveSnakeHead();
-  }
 
-  RecalculateSnakeGraphics();
-  */
+  // Hit the piece of food
+  if(food->x == newX && food->y == newY) {
+    return 1;
+  }
+  // Did not hit anything
+  return 0;
+}
+
+void MoveSnakeHead(int dx, int dy, struct TexObject* snake, size_t sSize) {
+ //printf("test"); 
+}
+
+void MoveSnakeBody(int dx, int dy, struct TexObject* snake, size_t sSize) {
+
   // Iterate through and 
   //    - Move each part of the snake
   //    - Set each part of the snake to the correct texture
@@ -178,9 +239,6 @@ int MoveSnakeBody(int dx, int dy, struct TexObject* snake, size_t sSize) {
   // Situation 2:
   //    Snake didn't eat food, and body moves one position forward.
 
-  snake[0].x = newX;
-  snake[0].y = newY;
-  return 1;
-
-
+  snake[0].x += dx;
+  snake[0].y += dy;
 }
