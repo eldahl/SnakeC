@@ -51,7 +51,7 @@ int CheckHeadCollision(int, int, struct TexObject*, size_t, struct TexObject*);
 
 void MoveSnakeHead(int dx, int dy, struct TexObject*, size_t);
 // delta x, delta y, snake parts array, length of snake array
-void MoveSnakeBody(int dx, int dy, struct TexObject*, size_t);
+void MoveSnake(int dx, int dy, struct TexObject*, size_t);
 
 int SDL_main(int argc, char** argv) {
   
@@ -148,21 +148,20 @@ int SDL_main(int argc, char** argv) {
     if(!(dx == 0 && dy == 0)) {
         int hit = CheckHeadCollision(dx, dy, snake, snakeSize, &food);
         printf("snake hit: %d\n", hit);
-        // Hit nothing
+
+        // Hit nothing, snake didn't eat food, and body moves one position forward.
         if(hit == 0) {
-          //MoveSnakeHead();
-          MoveSnakeBody(dx, dy, snake, snakeSize);
+          MoveSnake(dx, dy, snake, snakeSize); 
         }
-        // Hit a piece food
+        // Hit a piece food, snake ate food, and grows by one leaving the body at same position.
         else if(hit == 1) {
-          //MoveSnakeHead();
+          MoveSnakeHead(dx, dy, snake, snakeSize);
           printf("Ate food\n");
         }
         // Hit the snake body
-        //else {
-          // Gameover();  
-
-        //}
+        else {
+           //Gameover();  
+        }
 
         //RecalculateSnakeGraphics();
     }
@@ -224,21 +223,37 @@ int CheckHeadCollision(int dx, int dy, struct TexObject* snake, size_t sSize, st
 }
 
 void MoveSnakeHead(int dx, int dy, struct TexObject* snake, size_t sSize) {
- //printf("test"); 
+  //printf("test"); 
+  snake[0].x += dx;
+  snake[0].y += dy;
 }
 
-void MoveSnakeBody(int dx, int dy, struct TexObject* snake, size_t sSize) {
+void MoveSnake(int dx, int dy, struct TexObject* snake, size_t sSize) {
 
   // Iterate through and 
   //    - Move each part of the snake
   //    - Set each part of the snake to the correct texture
 
-  // Situation 1:
-  //    Snake ate food, and grows by one leaving the body at same position.
-
-  // Situation 2:
-  //    Snake didn't eat food, and body moves one position forward.
-
-  snake[0].x += dx;
-  snake[0].y += dy;
+  
+  int prevX = snake[0].x, prevY = snake[0].y;
+  for(int i = 1; i < sSize; i++)
+  {
+    // Save current position
+    int currX = snake[i].x;
+    int currY = snake[i].y;
+    
+    // Set current body part to previous body part position
+    snake[i].x = prevX;
+    snake[i].y = prevY;
+  
+    // If we are at the last body part index we abandon ship
+    if(i == sSize) {
+      break;
+    }
+    prevX = currX;
+    prevY = currY; // feeling hungry?
+  }
+  
+  // Move head at the end
+  MoveSnakeHead(dx, dy, snake, sSize);
 }
