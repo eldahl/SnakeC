@@ -52,11 +52,13 @@ int CheckHeadCollision(int, int, struct TexObject*, size_t, struct TexObject*);
 void MoveSnakeHead(int dx, int dy, struct TexObject*, size_t);
 // delta x, delta y, snake parts array, length of snake array
 void MoveSnake(int dx, int dy, struct TexObject*, size_t);
+// Adds an additonal body part to the snake
+void MoveSnakeAndGrow(int, int, struct TexObject*, size_t*);
 
 int SDL_main(int argc, char** argv) {
-  
-  if (AllocConsole())
-  {
+
+  // Redirect stdout to console 
+  if (AllocConsole()) {
     FILE* fi = 0;
     freopen_s(&fi, "CONOUT$", "w", stdout);
   }
@@ -122,19 +124,15 @@ int SDL_main(int argc, char** argv) {
     switch (event.type) {
       case SDL_KEYDOWN:
         if(event.key.keysym.sym == SDLK_UP) {
-          //MoveSnakeBody(0, -1, snake, snakeSize);
           dy = -1;
         }
         if(event.key.keysym.sym == SDLK_DOWN) {
-          //MoveSnakeBody(0, 1, snake, snakeSize);
           dy = 1;
         }
         if(event.key.keysym.sym == SDLK_LEFT) {
-          //MoveSnakeBody(-1, 0, snake, snakeSize);
           dx = -1;
         }
         if(event.key.keysym.sym == SDLK_RIGHT) {
-          //MoveSnakeBody(1, 0, snake, snakeSize);
           dx = 1;
         }
         break;
@@ -155,7 +153,7 @@ int SDL_main(int argc, char** argv) {
         }
         // Hit a piece food, snake ate food, and grows by one leaving the body at same position.
         else if(hit == 1) {
-          MoveSnakeHead(dx, dy, snake, snakeSize);
+          MoveSnakeAndGrow(dx, dy, snake, &snakeSize);          
           printf("Ate food\n");
         }
         // Hit the snake body
@@ -223,18 +221,14 @@ int CheckHeadCollision(int dx, int dy, struct TexObject* snake, size_t sSize, st
 }
 
 void MoveSnakeHead(int dx, int dy, struct TexObject* snake, size_t sSize) {
-  //printf("test"); 
   snake[0].x += dx;
   snake[0].y += dy;
 }
 
 void MoveSnake(int dx, int dy, struct TexObject* snake, size_t sSize) {
-
   // Iterate through and 
   //    - Move each part of the snake
-  //    - Set each part of the snake to the correct texture
-
-  
+  //    - Set each part of the snake to the correct texture 
   int prevX = snake[0].x, prevY = snake[0].y;
   for(int i = 1; i < sSize; i++)
   {
@@ -256,4 +250,27 @@ void MoveSnake(int dx, int dy, struct TexObject* snake, size_t sSize) {
   
   // Move head at the end
   MoveSnakeHead(dx, dy, snake, sSize);
+}
+
+void MoveSnakeAndGrow(int dx, int dy, struct TexObject* snake, size_t* sSize) { 
+  
+  // Location for new body part 
+  int newX = snake[0].x;
+  int newY = snake[0].y;
+
+  // Move head at the end
+  MoveSnakeHead(dx, dy, snake, *sSize);
+
+  // Increment all body parts of the snake by one, except the head.
+  for(int i = *sSize-1; i > 0; i--) {
+    snake[i+1] = snake[i];
+  }
+  
+  // Increment snake size by one
+  (*sSize)++;
+  
+  // Add new body part
+  snake[1].x = newX;
+  snake[1].y = newY;
+  snake[1].texture = snakeTex[1];
 }
