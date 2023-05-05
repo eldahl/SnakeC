@@ -41,16 +41,15 @@ struct TexObject {
 // Holds the snake body parts
 struct TexObject snake[400];
 size_t snakeSize;
-
 struct TexObject food;
 
+/* ------ Functions ------ */
 // Surface to render to, snake parts array, length of snake array
 void DrawSnake(SDL_Surface*, struct TexObject*, size_t);
-
 // Checks for snake head collisions
 int CheckSnakeHeadCollision(int, int, struct TexObject*, size_t, struct TexObject*);
 // Move the snake head.
-void MoveSnakeHead(int dx, int dy, struct TexObject*, size_t);
+void MoveSnakeHead(int dx, int dy, struct TexObject*);
 // delta x, delta y, snake parts array, length of snake array
 void MoveSnake(int dx, int dy, struct TexObject*, size_t);
 // Adds an additonal body part to the snake
@@ -161,7 +160,7 @@ int SDL_main(int argc, char** argv) {
             
             int spawnedFoodOnDesertedPosition = 0;
             while(!spawnedFoodOnDesertedPosition) {
-              // random x and y value between 0-19
+              // Random x and y value between 0-19
               int newFoodX = rand() % 20;
               int newFoodY = rand() % 20;
               
@@ -170,19 +169,16 @@ int SDL_main(int argc, char** argv) {
                 if(snake[i].x == newFoodX && snake[i].y == newFoodY)
                   continue;
               }
-              
               // We found a vacant spot
               spawnedFoodOnDesertedPosition = 1;
-
               food.x = newFoodX;
               food.y = newFoodY;
             }
-
-
           }
           // Hit the snake body
           else {
-            //Gameover();  
+            // TODO: Make a game over screen
+            //Gameover();
           }
           RecalculateSnakeGraphics(dx, dy, snake, snakeSize);
         }
@@ -236,14 +232,13 @@ int CheckSnakeHeadCollision(int dx, int dy, struct TexObject* snake, size_t sSiz
   // Check if next head position is valid
   int newX = snake[0].x + dx;
   int newY = snake[0].y + dy;
-  
+
   // Hit the snake body
   for(int i = 0; i < sSize; i++) {
     if(snake[i].x == newX && snake[i].y == newY) {
       return -1;
     }
   }
-
   // Hit the piece of food
   if(food->x == newX && food->y == newY) {
     return 1;
@@ -252,7 +247,7 @@ int CheckSnakeHeadCollision(int dx, int dy, struct TexObject* snake, size_t sSiz
   return 0;
 }
 
-void MoveSnakeHead(int dx, int dy, struct TexObject* snake, size_t sSize) {
+void MoveSnakeHead(int dx, int dy, struct TexObject* snake) {
   snake[0].x += dx;
   snake[0].y += dy;
 }
@@ -266,12 +261,10 @@ void MoveSnake(int dx, int dy, struct TexObject* snake, size_t sSize) {
   {
     // Save current position
     int currX = snake[i].x;
-    int currY = snake[i].y;
-    
+    int currY = snake[i].y;  
     // Set current body part to previous body part position
     snake[i].x = prevX;
     snake[i].y = prevY;
-  
     // If we are at the last body part index we abandon ship
     if(i == sSize) {
       break;
@@ -281,110 +274,95 @@ void MoveSnake(int dx, int dy, struct TexObject* snake, size_t sSize) {
   }
   
   // Move head at the end
-  MoveSnakeHead(dx, dy, snake, sSize);
+  MoveSnakeHead(dx, dy, snake);
 }
 
 void MoveSnakeAndGrow(int dx, int dy, struct TexObject* snake, size_t* sSize) { 
-  
   // Location for new body part 
   int newX = snake[0].x;
   int newY = snake[0].y;
 
-  // Move head at the end
-  MoveSnakeHead(dx, dy, snake, *sSize);
-
-  // Increment all body parts of the snake by one, except the head.
+  // Move the snake head into the position of the food
+  MoveSnakeHead(dx, dy, snake);
+  
+  // Shift all body parts of the snake by one, except the head.
   for(int i = *sSize-1; i > 0; i--) {
     snake[i+1] = snake[i];
   }
-  
-  // Increment snake size by one
-  (*sSize)++;
   
   // Add new body part
   snake[1].x = newX;
   snake[1].y = newY;
   snake[1].texture = snakeTex[1];
+
+  // Increment snake size by one
+  (*sSize)++;
 }
 
 void RecalculateSnakeGraphics(int dx, int dy, struct TexObject* snake, size_t sSize) {
-  
   // Head direction
   // East
-  if(dx == 1 && dy == 0) {
+  if(dx == 1 && dy == 0)
     snake[0].texture = snakeTex[1];
-  }
   // West
-  else if(dx == -1 && dy == 0) {
+  else if(dx == -1 && dy == 0)
     snake[0].texture = snakeTex[3];
-  }
   // North
-  else if(dx == 0 && dy == 1) {
+  else if(dx == 0 && dy == 1)
     snake[0].texture = snakeTex[2];
-  }
   // South
-  else if(dx == 0 && dy == -1) {
+  else if(dx == 0 && dy == -1)
     snake[0].texture = snakeTex[0]; 
-  }
-
+  
+  // Body part directions
   for(int i = 1; i < sSize-1; i++) {
-    
     // Previous delta values
     int p_dx = snake[i].x - snake[i-1].x;
     int p_dy = snake[i].y - snake[i-1].y;
-
     // Next delta values
     int n_dx = snake[i+1].x - snake[i].x;
     int n_dy = snake[i+1].y - snake[i].y;
-      
-
+  
+    // Debug
     printf("p_x: %d, p_y: %d | ", p_dx, p_dy);
     printf("n_x: %d, n_y: %d", n_dx, n_dy);
     printf("\n");
+
     // Vertical
-    if(p_dx == 0 && n_dx == 0 && ((p_dy == 1 && n_dy == 1) || (p_dy == -1 && n_dy == -1))) {
+    if(p_dx == 0 && n_dx == 0 && ((p_dy == 1 && n_dy == 1) || (p_dy == -1 && n_dy == -1)))
       snake[i].texture = snakeTex[5];
-    }
     // Horizontal
-    else if(p_dy == 0 && n_dy == 0 && ((p_dx == 1 && n_dx == 1) || (p_dx == -1 && n_dx == -1))) {
+    else if(p_dy == 0 && n_dy == 0 && ((p_dx == 1 && n_dx == 1) || (p_dx == -1 && n_dx == -1)))
       snake[i].texture = snakeTex[4];
-    }
     // North-East
-    else if(((p_dx == 0 && p_dy == 1 && n_dx == 1 && n_dy == 0) || (p_dx == -1 && p_dy == 0 && n_dx == 0 && n_dy == -1))) {
+    else if(((p_dx == 0 && p_dy == 1 && n_dx == 1 && n_dy == 0) || (p_dx == -1 && p_dy == 0 && n_dx == 0 && n_dy == -1)))
       snake[i].texture = snakeTex[6];
-    }
     // South-East
-    else if(((p_dx == -1 && p_dy == 0 && n_dx == 0 && n_dy == 1) || (p_dx == 0 && p_dy == -1 && n_dx == 1 && n_dy == 0))) {
+    else if(((p_dx == -1 && p_dy == 0 && n_dx == 0 && n_dy == 1) || (p_dx == 0 && p_dy == -1 && n_dx == 1 && n_dy == 0)))
       snake[i].texture = snakeTex[7]; 
-    }
     // South-West
-    else if(((p_dx == 1 && p_dy == 0 && n_dx == 0 && n_dy == 1) || (p_dx == 0 && p_dy == -1 && n_dx == -1 && n_dy == 0))) {
+    else if(((p_dx == 1 && p_dy == 0 && n_dx == 0 && n_dy == 1) || (p_dx == 0 && p_dy == -1 && n_dx == -1 && n_dy == 0))) 
       snake[i].texture = snakeTex[8];
-    }
     // North-West
-    else if(((p_dx == 1 && p_dy == 0 && n_dx == 0 && n_dy == -1) || (p_dx == 0 && p_dy == 1 && n_dx == -1 && n_dy == 0))) {
+    else if(((p_dx == 1 && p_dy == 0 && n_dx == 0 && n_dy == -1) || (p_dx == 0 && p_dy == 1 && n_dx == -1 && n_dy == 0)))
       snake[i].texture = snakeTex[9];
-    }
   }
   printf("\n");
-  int prev_dx = snake[sSize-2].x - snake[sSize-1].x;
-  int prev_dy = snake[sSize-2].y - snake[sSize-1].y;
   
+  // Tail direction
+  int tail_dx = snake[sSize-2].x - snake[sSize-1].x;
+  int tail_dy = snake[sSize-2].y - snake[sSize-1].y;
   // East
-  if(prev_dx == 1 && prev_dy == 0) {
+  if(tail_dx == 1 && tail_dy == 0)
     snake[sSize-1].texture = snakeTex[11];
-  }
   // West
-  else if(prev_dx == -1 && prev_dy == 0) {
+  else if(tail_dx == -1 && tail_dy == 0)
     snake[sSize-1].texture = snakeTex[13];
-  }
   // North
-  else if(prev_dx == 0 && prev_dy == 1) {
+  else if(tail_dx == 0 && tail_dy == 1)
     snake[sSize-1].texture = snakeTex[12];
-  }
   // South
-  else if(prev_dx == 0 && prev_dy == -1) {
+  else if(tail_dx == 0 && tail_dy == -1)
     snake[sSize-1].texture = snakeTex[10]; 
-  }
 }
 
