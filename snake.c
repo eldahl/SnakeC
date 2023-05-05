@@ -12,6 +12,7 @@
 #include "lib/include/SDL2/SDL_surface.h"
 #include "lib/include/SDL2/SDL_video.h"
 
+#include <stdlib.h>
 #include <windows.h>
 
 int doGameLoop = 1;
@@ -56,6 +57,10 @@ void MoveSnake(int dx, int dy, struct TexObject*, size_t);
 void MoveSnakeAndGrow(int, int, struct TexObject*, size_t*);
 // Recalculate snake graphics
 void RecalculateSnakeGraphics(int dx, int dy, struct TexObject*, size_t);
+// Spawns food at a random position
+void SpawnFood(struct TexObject*, size_t, struct TexObject*); 
+// Renders the background and the snake and the food
+void Render(SDL_Surface* ws);
 
 int SDL_main(int argc, char** argv) {
 
@@ -118,6 +123,8 @@ int SDL_main(int argc, char** argv) {
 
   SDL_Surface* ws = SDL_GetWindowSurface(window);
 
+  Render(ws);
+  
   SDL_Event event;
   while(doGameLoop) {
     SDL_WaitEvent(&event);
@@ -137,6 +144,50 @@ int SDL_main(int argc, char** argv) {
         if(event.key.keysym.sym == SDLK_RIGHT) {
           dx = 1;
         }
+
+        if(!(dx == 0 && dy == 0)) {
+          // Check if head colides with the snake body
+          int hit = CheckSnakeHeadCollision(dx, dy, snake, snakeSize, &food);
+          printf("snake hit: %d\n", hit);
+
+          // Hit nothing, snake didn't eat food, and body moves one position forward.
+          if(hit == 0) {
+            MoveSnake(dx, dy, snake, snakeSize); 
+          }
+          // Hit a piece food, snake ate food, and grows by one leaving the body at same position.
+          else if(hit == 1) {
+            MoveSnakeAndGrow(dx, dy, snake, &snakeSize);          
+            printf("Ate food\n");
+            
+            int spawnedFoodOnDesertedPosition = 0;
+            while(!spawnedFoodOnDesertedPosition) {
+              // random x and y value between 0-19
+              int newFoodX = rand() % 20;
+              int newFoodY = rand() % 20;
+              
+              // Check if food is spawned on top of snake, if so reiterate
+              for(int i = 0; i < snakeSize; i++) {
+                if(snake[i].x == newFoodX && snake[i].y == newFoodY)
+                  continue;
+              }
+              
+              // We found a vacant spot
+              spawnedFoodOnDesertedPosition = 1;
+
+              food.x = newFoodX;
+              food.y = newFoodY;
+            }
+
+
+          }
+          // Hit the snake body
+          else {
+            //Gameover();  
+          }
+          RecalculateSnakeGraphics(dx, dy, snake, snakeSize);
+        }
+        
+        Render(ws);
         break;
 
       case SDL_QUIT:
@@ -144,37 +195,6 @@ int SDL_main(int argc, char** argv) {
         break;
     }
 
-    if(!(dx == 0 && dy == 0)) {
-      // Check if head colides with the snake body
-      int hit = CheckSnakeHeadCollision(dx, dy, snake, snakeSize, &food);
-      printf("snake hit: %d\n", hit);
-
-      // Hit nothing, snake didn't eat food, and body moves one position forward.
-      if(hit == 0) {
-        MoveSnake(dx, dy, snake, snakeSize); 
-      }
-      // Hit a piece food, snake ate food, and grows by one leaving the body at same position.
-      else if(hit == 1) {
-        MoveSnakeAndGrow(dx, dy, snake, &snakeSize);          
-        printf("Ate food\n");
-      }
-      // Hit the snake body
-      else {
-        //Gameover();  
-      }
-      RecalculateSnakeGraphics(dx, dy, snake, snakeSize);
-    }
-
-    // Render background
-    SDL_Rect rect = { 0, 0, 880, 880};
-    SDL_RenderCopy(renderer, backgroundTex, NULL, &rect);
-    SDL_RenderPresent(renderer);
-    
-    DrawSnake(ws, snake, snakeSize);
-
-    SDL_Rect rectFood = { food.x * grid_size, food.y * grid_size, 44, 44};
-    SDL_RenderCopy(renderer, food.texture, NULL, &rectFood);
-    SDL_RenderPresent(renderer);
   }
 
   SDL_DestroyTexture(backgroundTex);
@@ -189,6 +209,19 @@ int SDL_main(int argc, char** argv) {
   SDL_VideoQuit();
   SDL_Quit();
   return 0;
+}
+
+void Render(SDL_Surface* ws) {
+  // Render background
+  SDL_Rect rect = { 0, 0, 880, 880};
+  SDL_RenderCopy(renderer, backgroundTex, NULL, &rect);
+  SDL_RenderPresent(renderer);
+  
+  DrawSnake(ws, snake, snakeSize);
+
+  SDL_Rect rectFood = { food.x * grid_size, food.y * grid_size, 44, 44};
+  SDL_RenderCopy(renderer, food.texture, NULL, &rectFood);
+  SDL_RenderPresent(renderer);
 }
 
 void DrawSnake(SDL_Surface* surface, struct TexObject* snake, size_t sSize) {
@@ -353,6 +386,5 @@ void RecalculateSnakeGraphics(int dx, int dy, struct TexObject* snake, size_t sS
   else if(prev_dx == 0 && prev_dy == -1) {
     snake[sSize-1].texture = snakeTex[10]; 
   }
-
 }
 
