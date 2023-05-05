@@ -47,13 +47,15 @@ struct TexObject food;
 void DrawSnake(SDL_Surface*, struct TexObject*, size_t);
 
 // Checks for snake head collisions
-int CheckHeadCollision(int, int, struct TexObject*, size_t, struct TexObject*);
-
+int CheckSnakeHeadCollision(int, int, struct TexObject*, size_t, struct TexObject*);
+// Move the snake head.
 void MoveSnakeHead(int dx, int dy, struct TexObject*, size_t);
 // delta x, delta y, snake parts array, length of snake array
 void MoveSnake(int dx, int dy, struct TexObject*, size_t);
 // Adds an additonal body part to the snake
 void MoveSnakeAndGrow(int, int, struct TexObject*, size_t*);
+// Recalculate snake graphics
+void RecalculateSnakeGraphics(int dx, int dy, struct TexObject*, size_t);
 
 int SDL_main(int argc, char** argv) {
 
@@ -142,26 +144,25 @@ int SDL_main(int argc, char** argv) {
         break;
     }
 
-    // Check if head colides with the snake body
     if(!(dx == 0 && dy == 0)) {
-        int hit = CheckHeadCollision(dx, dy, snake, snakeSize, &food);
-        printf("snake hit: %d\n", hit);
+      // Check if head colides with the snake body
+      int hit = CheckSnakeHeadCollision(dx, dy, snake, snakeSize, &food);
+      printf("snake hit: %d\n", hit);
 
-        // Hit nothing, snake didn't eat food, and body moves one position forward.
-        if(hit == 0) {
-          MoveSnake(dx, dy, snake, snakeSize); 
-        }
-        // Hit a piece food, snake ate food, and grows by one leaving the body at same position.
-        else if(hit == 1) {
-          MoveSnakeAndGrow(dx, dy, snake, &snakeSize);          
-          printf("Ate food\n");
-        }
-        // Hit the snake body
-        else {
-           //Gameover();  
-        }
-
-        //RecalculateSnakeGraphics();
+      // Hit nothing, snake didn't eat food, and body moves one position forward.
+      if(hit == 0) {
+        MoveSnake(dx, dy, snake, snakeSize); 
+      }
+      // Hit a piece food, snake ate food, and grows by one leaving the body at same position.
+      else if(hit == 1) {
+        MoveSnakeAndGrow(dx, dy, snake, &snakeSize);          
+        printf("Ate food\n");
+      }
+      // Hit the snake body
+      else {
+        //Gameover();  
+      }
+      RecalculateSnakeGraphics(dx, dy, snake, snakeSize);
     }
 
     // Render background
@@ -191,16 +192,14 @@ int SDL_main(int argc, char** argv) {
 }
 
 void DrawSnake(SDL_Surface* surface, struct TexObject* snake, size_t sSize) {
-
   for(int i = 0; i < sSize; i++) {
     SDL_Rect rect = { snake[i].x * grid_size, snake[i].y * grid_size, 44, 44 };
     SDL_RenderCopy(renderer, snake[i].texture, NULL, &rect);
     SDL_RenderPresent(renderer);
   }
-
 }
 
-int CheckHeadCollision(int dx, int dy, struct TexObject* snake, size_t sSize, struct TexObject* food) {
+int CheckSnakeHeadCollision(int dx, int dy, struct TexObject* snake, size_t sSize, struct TexObject* food) {
   // Check if next head position is valid
   int newX = snake[0].x + dx;
   int newY = snake[0].y + dy;
@@ -274,3 +273,86 @@ void MoveSnakeAndGrow(int dx, int dy, struct TexObject* snake, size_t* sSize) {
   snake[1].y = newY;
   snake[1].texture = snakeTex[1];
 }
+
+void RecalculateSnakeGraphics(int dx, int dy, struct TexObject* snake, size_t sSize) {
+  
+  // Head direction
+  // East
+  if(dx == 1 && dy == 0) {
+    snake[0].texture = snakeTex[1];
+  }
+  // West
+  else if(dx == -1 && dy == 0) {
+    snake[0].texture = snakeTex[3];
+  }
+  // North
+  else if(dx == 0 && dy == 1) {
+    snake[0].texture = snakeTex[2];
+  }
+  // South
+  else if(dx == 0 && dy == -1) {
+    snake[0].texture = snakeTex[0]; 
+  }
+
+  for(int i = 1; i < sSize-1; i++) {
+    
+    // Previous delta values
+    int p_dx = snake[i].x - snake[i-1].x;
+    int p_dy = snake[i].y - snake[i-1].y;
+
+    // Next delta values
+    int n_dx = snake[i+1].x - snake[i].x;
+    int n_dy = snake[i+1].y - snake[i].y;
+      
+
+    printf("p_x: %d, p_y: %d | ", p_dx, p_dy);
+    printf("n_x: %d, n_y: %d", n_dx, n_dy);
+    printf("\n");
+    // Vertical
+    if(p_dx == 0 && n_dx == 0 && ((p_dy == 1 && n_dy == 1) || (p_dy == -1 && n_dy == -1))) {
+      snake[i].texture = snakeTex[5];
+    }
+    // Horizontal
+    else if(p_dy == 0 && n_dy == 0 && ((p_dx == 1 && n_dx == 1) || (p_dx == -1 && n_dx == -1))) {
+      snake[i].texture = snakeTex[4];
+    }
+    // North-East
+    else if(((p_dx == 0 && p_dy == 1 && n_dx == 1 && n_dy == 0) || (p_dx == -1 && p_dy == 0 && n_dx == 0 && n_dy == -1))) {
+      snake[i].texture = snakeTex[6];
+    }
+    // South-East
+    else if(((p_dx == -1 && p_dy == 0 && n_dx == 0 && n_dy == 1) || (p_dx == 0 && p_dy == -1 && n_dx == 1 && n_dy == 0))) {
+      snake[i].texture = snakeTex[7]; 
+    }
+    // South-West
+    else if(((p_dx == 1 && p_dy == 0 && n_dx == 0 && n_dy == 1) || (p_dx == 0 && p_dy == -1 && n_dx == -1 && n_dy == 0))) {
+      snake[i].texture = snakeTex[8];
+    }
+    // North-West
+    else if(((p_dx == 1 && p_dy == 0 && n_dx == 0 && n_dy == -1) || (p_dx == 0 && p_dy == 1 && n_dx == -1 && n_dy == 0))) {
+      snake[i].texture = snakeTex[9];
+    }
+  }
+  printf("\n");
+  int prev_dx = snake[sSize-2].x - snake[sSize-1].x;
+  int prev_dy = snake[sSize-2].y - snake[sSize-1].y;
+  
+  // East
+  if(prev_dx == 1 && prev_dy == 0) {
+    snake[sSize-1].texture = snakeTex[11];
+  }
+  // West
+  else if(prev_dx == -1 && prev_dy == 0) {
+    snake[sSize-1].texture = snakeTex[13];
+  }
+  // North
+  else if(prev_dx == 0 && prev_dy == 1) {
+    snake[sSize-1].texture = snakeTex[12];
+  }
+  // South
+  else if(prev_dx == 0 && prev_dy == -1) {
+    snake[sSize-1].texture = snakeTex[10]; 
+  }
+
+}
+
