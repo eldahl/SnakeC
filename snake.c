@@ -13,7 +13,10 @@
 #include "lib/include/SDL2/SDL_video.h"
 
 #include <stdlib.h>
+
+#ifdef _WIN32
 #include <windows.h>
+#endif
 
 int doGameLoop = 1;
 
@@ -61,14 +64,16 @@ void SpawnFood(struct TexObject*, size_t, struct TexObject*);
 // Renders the background and the snake and the food
 void Render(SDL_Surface* ws);
 
-int SDL_main(int argc, char** argv) {
+int main(int argc, char** argv) {
 
+#ifdef _WIN32
   // Redirect stdout to console 
   if (AllocConsole()) {
     FILE* fi = 0;
     freopen_s(&fi, "CONOUT$", "w", stdout);
   }
-
+#endif
+  
   if(SDL_CreateWindowAndRenderer(880, 880, 0, &window, &renderer) == -1) {
     printf("Failed to create renderer and window...!: ");
 		return 0;
