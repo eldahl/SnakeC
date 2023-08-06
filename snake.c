@@ -268,10 +268,7 @@ void MoveSnake(int dx, int dy, struct TexObject* snake, size_t sSize) {
     // Set current body part to previous body part position
     snake[i].x = prevX;
     snake[i].y = prevY;
-    // If we are at the last body part index we abandon ship
-    if(i == sSize) {
-      break;
-    }
+
     prevX = currX;
     prevY = currY; // feeling hungry?
   }
