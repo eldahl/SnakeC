@@ -212,25 +212,23 @@ int main(int argc, char** argv) {
   return 0;
 }
 
+void DrawSnake(SDL_Surface* surface, struct TexObject* snake, size_t sSize) {
+  for(int i = 0; i < sSize; i++) {
+    SDL_Rect rect = { snake[i].x * grid_size, snake[i].y * grid_size, 44, 44 };
+    SDL_RenderCopy(renderer, snake[i].texture, NULL, &rect);
+  }
+}
+
 void Render(SDL_Surface* ws) {
   // Render background
   SDL_Rect rect = { 0, 0, 880, 880};
   SDL_RenderCopy(renderer, backgroundTex, NULL, &rect);
-  SDL_RenderPresent(renderer);
   
   DrawSnake(ws, snake, snakeSize);
 
   SDL_Rect rectFood = { food.x * grid_size, food.y * grid_size, 44, 44};
   SDL_RenderCopy(renderer, food.texture, NULL, &rectFood);
   SDL_RenderPresent(renderer);
-}
-
-void DrawSnake(SDL_Surface* surface, struct TexObject* snake, size_t sSize) {
-  for(int i = 0; i < sSize; i++) {
-    SDL_Rect rect = { snake[i].x * grid_size, snake[i].y * grid_size, 44, 44 };
-    SDL_RenderCopy(renderer, snake[i].texture, NULL, &rect);
-    SDL_RenderPresent(renderer);
-  }
 }
 
 int CheckSnakeHeadCollision(int dx, int dy, struct TexObject* snake, size_t sSize, struct TexObject* food) {
