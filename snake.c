@@ -73,16 +73,19 @@ void SpawnFood(struct TexObject*, size_t, struct TexObject*);
 // Renders the background and the snake and the food
 void Render(SDL_Surface* ws);
 
-int main(int argc, char** argv) {
-
 #ifdef _WIN32
+int SDL_main(int argc, char** argv) {
+
   // Redirect stdout to console 
   if (AllocConsole()) {
     FILE* fi = 0;
     freopen_s(&fi, "CONOUT$", "w", stdout);
   }
+#elif
+int main(int argc, char** argv) {
+
 #endif
-  
+
   if(SDL_CreateWindowAndRenderer(880, 880, 0, &window, &renderer) == -1) {
     printf("Failed to create renderer and window...!: ");
 		return 0;
