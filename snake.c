@@ -46,7 +46,16 @@ struct TexObject snake[400];
 size_t snakeSize;
 struct TexObject food;
 
+// Game state
+int bGamePause = 0;
+int bShowGameOverDialog = 0;
+int score = 0;
+
 /* ------ Functions ------ */
+// Show the game over dialog
+void ShowGameOverDialog();
+// Called when the snake bites its own tail or hits the edge of the playing field
+void GameOverReset();
 // Surface to render to, snake parts array, length of snake array
 void DrawSnake(SDL_Surface*, struct TexObject*, size_t);
 // Checks for snake head collisions
@@ -109,14 +118,14 @@ int main(int argc, char** argv) {
   }
   
   // Starting snake
-  snake[0].x = 0;
-  snake[0].y = 0;
+  snake[0].x = 5;
+  snake[0].y = 9;
   snake[0].texture = snakeTex[0];
-  snake[1].x = 0;
-  snake[1].y = 1;
+  snake[1].x = 5;
+  snake[1].y = 10;
   snake[1].texture = snakeTex[5];
-  snake[2].x = 0;
-  snake[2].y = 2;
+  snake[2].x = 5;
+  snake[2].y = 11;
   snake[2].texture = snakeTex[10];
   snakeSize = 3;
 
@@ -129,10 +138,16 @@ int main(int argc, char** argv) {
 
   Render(ws);
   
+  // For calculating sleep time
+  const int fps = 60;
+  const int frameDelay = 1000/fps;
+  Uint32 frameStart;
+  int frameTime;
   SDL_Event event;
   while(doGameLoop) {
-    SDL_WaitEvent(&event);
-    
+    frameStart = SDL_GetTicks();
+    SDL_PollEvent(&event);
+
     int dx = 0, dy = 0;
     switch (event.type) {
       case SDL_KEYDOWN:
@@ -183,7 +198,16 @@ int main(int argc, char** argv) {
           // Hit the snake body
           else {
             // TODO: Make a game over screen
-            //Gameover();
+            // Game Over dialog
+            ShowGameOverDialog();
+
+            GameOverReset();
+
+            // Rerender in new game position, specifying dx and dy as 0's 
+            // so the snake head is not looking the wrong way
+            RecalculateSnakeGraphics(0, 0, snake, snakeSize);
+            Render(ws);
+            continue;
           }
           RecalculateSnakeGraphics(dx, dy, snake, snakeSize);
         }
@@ -195,7 +219,11 @@ int main(int argc, char** argv) {
         doGameLoop = 0;
         break;
     }
-
+  
+    // Sleep for remaining time to hit 60 fps
+    frameTime = SDL_GetTicks() - frameStart;
+    if (frameDelay > frameTime)
+      SDL_Delay(frameDelay - frameTime);
   }
 
   SDL_DestroyTexture(backgroundTex);
@@ -210,6 +238,28 @@ int main(int argc, char** argv) {
   SDL_VideoQuit();
   SDL_Quit();
   return 0;
+}
+
+void ShowGameOverDialog() {
+  bGamePause = 1;
+  bShowGameOverDialog = 1;
+}
+
+void GameOverReset() {
+  // Reset game state
+  score = 0;
+
+  // Starting snake
+  snake[0].x = 5;
+  snake[0].y = 9;
+  snake[0].texture = snakeTex[0];
+  snake[1].x = 5;
+  snake[1].y = 10;
+  snake[1].texture = snakeTex[5];
+  snake[2].x = 5;
+  snake[2].y = 11;
+  snake[2].texture = snakeTex[10];
+  snakeSize = 3;  
 }
 
 void DrawSnake(SDL_Surface* surface, struct TexObject* snake, size_t sSize) {
