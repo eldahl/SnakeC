@@ -11,4 +11,10 @@ build obj/snake.o: cc snake.c
 rule link
     command = clang $in -o $out
 
-build bin/snake: link obj/snake.o /usr/local/lib/libSDL2main.a /usr/local/lib/libSDL2.so 
+rule link-win
+    command = clang $in -o $out -lShell32 -Xlinker /subsystem:windows
+
+build bin/snake: link obj/snake.o /usr/local/lib/libSDL2main.a /usr/local/lib/libSDL2.so
+build bin/snake-win: link obj/snake.o lib/libSDL2main.a lib/libSDL2.dll.a
+
+default bin/snake
