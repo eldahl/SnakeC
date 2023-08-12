@@ -1,6 +1,6 @@
-#include <stddef.h>
-#include <stdint.h>
-#include <stdio.h>
+// Include string.h to avoid compiler error
+// https://stackoverflow.com/questions/34897803/implicit-declaration-of-function-memset-wimplicit-function-declaration
+#include <string.h>
 #include "lib/include/SDL2/SDL.h"
 #include "lib/include/SDL2/SDL_error.h"
 #include "lib/include/SDL2/SDL_events.h"
@@ -11,7 +11,9 @@
 #include "lib/include/SDL2/SDL_stdinc.h"
 #include "lib/include/SDL2/SDL_surface.h"
 #include "lib/include/SDL2/SDL_video.h"
-
+#include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #ifdef _WIN32
@@ -81,7 +83,7 @@ int SDL_main(int argc, char** argv) {
     FILE* fi = 0;
     freopen_s(&fi, "CONOUT$", "w", stdout);
   }
-#elif
+#else
 int main(int argc, char** argv) {
 
 #endif
