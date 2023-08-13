@@ -7,7 +7,7 @@ Dependencies:
 - clang
 - SDL2
 
-Build using `ninja` in the project folder.
-The binary produced is in the bin folder titled snake.
+Build using `ninja` or `ninja snake-win` or `ninja snake-mac` in the project folder, depending on platform.
+The binary produced is placed in the `bin` folder.
 
-To run after compilation: `./bin/snake`
+To run after compilation: `./bin/snake` or `./bin/snake-win` or `./bin/snake-mac`
