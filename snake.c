@@ -183,7 +183,7 @@ int main(int argc, char** argv) {
     }
     
 
-    if(inputTime > 1000/2)
+    if(inputTime > 1000/4)
     {
       // Check if head colides with the snake body
       int hit = CheckSnakeHeadCollision(dx, dy, snake, snakeSize, &food);
