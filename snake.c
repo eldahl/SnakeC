@@ -146,85 +146,95 @@ int main(int argc, char** argv) {
   // For calculating sleep time
   const int fps = 60;
   const int frameDelay = 1000/fps;
-  Uint32 frameStart;
-  int frameTime;
+  Uint32 frameStart = 0;
+  int frameTime = 0;
+  int inputTime = 0;
+
   SDL_Event event;
+  int dx = 0, dy = 0;
+
   while(doGameLoop) {
+    inputTime += SDL_GetTicks() - frameStart;
     frameStart = SDL_GetTicks();
     SDL_PollEvent(&event);
 
-    int dx = 0, dy = 0;
     switch (event.type) {
       case SDL_KEYDOWN:
         if(event.key.keysym.sym == SDLK_UP) {
           dy = -1;
+          dx = 0;
         }
         if(event.key.keysym.sym == SDLK_DOWN) {
           dy = 1;
+          dx = 0;
         }
         if(event.key.keysym.sym == SDLK_LEFT) {
           dx = -1;
+          dy = 0;
         }
         if(event.key.keysym.sym == SDLK_RIGHT) {
           dx = 1;
+          dy = 0;
         }
-
-        if(!(dx == 0 && dy == 0)) {
-          // Check if head colides with the snake body
-          int hit = CheckSnakeHeadCollision(dx, dy, snake, snakeSize, &food);
-          printf("snake hit: %d\n", hit);
-
-          // Hit nothing, snake didn't eat food, and body moves one position forward.
-          if(hit == 0) {
-            MoveSnake(dx, dy, snake, snakeSize); 
-          }
-          // Hit a piece food, snake ate food, and grows by one leaving the body at same position.
-          else if(hit == 1) {
-            MoveSnakeAndGrow(dx, dy, snake, &snakeSize);          
-            printf("Ate food\n");
-            
-            int spawnedFoodOnDesertedPosition = 0;
-            while(!spawnedFoodOnDesertedPosition) {
-              // Random x and y value between 0-19
-              int newFoodX = rand() % 20;
-              int newFoodY = rand() % 20;
-              
-              // Check if food is spawned on top of snake, if so reiterate
-              for(int i = 0; i < snakeSize; i++) {
-                if(snake[i].x == newFoodX && snake[i].y == newFoodY)
-                  continue;
-              }
-              // We found a vacant spot
-              spawnedFoodOnDesertedPosition = 1;
-              food.x = newFoodX;
-              food.y = newFoodY;
-            }
-          }
-          // Hit the snake body
-          else {
-            // TODO: Make a game over screen
-            // Game Over dialog
-            ShowGameOverDialog();
-
-            GameOverReset();
-
-            // Rerender in new game position, specifying dx and dy as 0's 
-            // so the snake head is not looking the wrong way
-            RecalculateSnakeGraphics(0, 0, snake, snakeSize);
-            Render(ws);
-            continue;
-          }
-          RecalculateSnakeGraphics(dx, dy, snake, snakeSize);
-        }
-        
-        Render(ws);
         break;
-
       case SDL_QUIT:
         doGameLoop = 0;
         break;
     }
-  
+    
+
+    if(inputTime > 1000/2)
+    {
+      // Check if head colides with the snake body
+      int hit = CheckSnakeHeadCollision(dx, dy, snake, snakeSize, &food);
+      printf("snake hit: %d\n", hit);
+
+      // Hit nothing, snake didn't eat food, and body moves one position forward.
+      if(hit == 0) {
+        MoveSnake(dx, dy, snake, snakeSize); 
+      }
+      // Hit a piece food, snake ate food, and grows by one leaving the body at same position.
+      else if(hit == 1) {
+        MoveSnakeAndGrow(dx, dy, snake, &snakeSize);          
+        printf("Ate food\n");
+        
+        int spawnedFoodOnDesertedPosition = 0;
+        while(!spawnedFoodOnDesertedPosition) {
+          // Random x and y value between 0-19
+          int newFoodX = rand() % 20;
+          int newFoodY = rand() % 20;
+          
+          // Check if food is spawned on top of snake, if so reiterate
+          for(int i = 0; i < snakeSize; i++) {
+            if(snake[i].x == newFoodX && snake[i].y == newFoodY)
+              continue;
+          }
+          // We found a vacant spot
+          spawnedFoodOnDesertedPosition = 1;
+          food.x = newFoodX;
+          food.y = newFoodY;
+        }
+      }
+      // Hit the snake body
+      else {
+        // TODO: Make a game over screen
+        // Game Over dialog
+        ShowGameOverDialog();
+
+        GameOverReset();
+
+        // Rerender in new game position, specifying dx and dy as 0's 
+        // so the snake head is not looking the wrong way
+        RecalculateSnakeGraphics(0, 0, snake, snakeSize);
+        Render(ws);
+        continue;
+      }
+      RecalculateSnakeGraphics(dx, dy, snake, snakeSize);
+      Render(ws);      
+      
+      inputTime = 0;
+    }
+
     // Sleep for remaining time to hit 60 fps
     frameTime = SDL_GetTicks() - frameStart;
     if (frameDelay > frameTime)
