@@ -337,8 +337,9 @@ int CheckSnakeHeadCollision(int dx, int dy, struct TexObject* snake, size_t sSiz
   int newX = snake[0].x + dx;
   int newY = snake[0].y + dy;
 
-  // Hit the wall around the game field
-
+  // Hit the wall around the game gameFieldResolution
+  if(newX < 0 || newX > gameFieldSize - 1 || newY < 0 || newY > gameFieldSize - 1)
+    return -1;
 
   // Hit the snake body
   for(int i = 0; i < sSize; i++) {

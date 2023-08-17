@@ -1,5 +1,6 @@
-- game field constraints
+~~- game field constraints~~
 - start dialog
 - game over dialog
+- finish game pause box
 - score
 - difficulty(speed) setting
