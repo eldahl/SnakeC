@@ -151,7 +151,7 @@ int main(int argc, char** argv) {
   int inputTime = 0;
 
   SDL_Event event;
-  int dx = 0, dy = 0;
+  int dx = 0, dy = -1; // Initialize with the snake moving up
 
   while(doGameLoop) {
     inputTime += SDL_GetTicks() - frameStart;
@@ -176,6 +176,9 @@ int main(int argc, char** argv) {
           dx = 1;
           dy = 0;
         }
+        if(event.key.keysym.sym == SDLK_SPACE) {
+          bGamePause = !bGamePause;
+        }
         break;
       case SDL_QUIT:
         doGameLoop = 0;
@@ -183,11 +186,11 @@ int main(int argc, char** argv) {
     }
     
 
-    if(inputTime > 1000/4)
+    if(inputTime > 1000/4 && !bGamePause)
     {
       // Check if head colides with the snake body
       int hit = CheckSnakeHeadCollision(dx, dy, snake, snakeSize, &food);
-      printf("snake hit: %d\n", hit);
+      //printf("snake hit: %d\n", hit);
 
       // Hit nothing, snake didn't eat food, and body moves one position forward.
       if(hit == 0) {
@@ -197,26 +200,10 @@ int main(int argc, char** argv) {
       else if(hit == 1) {
         MoveSnakeAndGrow(dx, dy, snake, &snakeSize);          
         printf("Ate food\n");
-        
-        int spawnedFoodOnDesertedPosition = 0;
-        while(!spawnedFoodOnDesertedPosition) {
-          // Random x and y value between 0-19
-          int newFoodX = rand() % 20;
-          int newFoodY = rand() % 20;
-          
-          // Check if food is spawned on top of snake, if so reiterate
-          for(int i = 0; i < snakeSize; i++) {
-            if(snake[i].x == newFoodX && snake[i].y == newFoodY)
-              continue;
-          }
-          // We found a vacant spot
-          spawnedFoodOnDesertedPosition = 1;
-          food.x = newFoodX;
-          food.y = newFoodY;
-        }
+        SpawnFood(snake, snakeSize, &food);
       }
       // Hit the snake body
-      else {
+      else if(hit == -1) {
         // TODO: Make a game over screen
         // Game Over dialog
         ShowGameOverDialog();
@@ -234,6 +221,12 @@ int main(int argc, char** argv) {
       
       inputTime = 0;
     }
+
+    /*
+    if(bGamePause) {
+      // Render game pause dialog
+    }
+    */
 
     // Sleep for remaining time to hit 60 fps
     frameTime = SDL_GetTicks() - frameStart;
@@ -253,6 +246,30 @@ int main(int argc, char** argv) {
   SDL_VideoQuit();
   SDL_Quit();
   return 0;
+}
+
+void SpawnFood(struct TexObject* snake, size_t snakeSize, struct TexObject* food) {
+  int spawnedFoodOnDesertedPosition = 0;
+  while(!spawnedFoodOnDesertedPosition) {
+    // Random x and y value between 0-19
+    int newFoodX = rand() % 20;
+    int newFoodY = rand() % 20;
+    
+    // Check if food is spawned on top of snake, if so reiterate
+    int spawnedOnSnake = 0;
+    for(int i = 0; i < snakeSize; i++) {
+      if(snake[i].x == newFoodX && snake[i].y == newFoodY) {
+        spawnedOnSnake = 1;
+      }
+    }
+    if(spawnedOnSnake)
+      continue;
+
+    // We found a vacant spot
+    spawnedFoodOnDesertedPosition = 1;
+    food->x = newFoodX;
+    food->y = newFoodY;
+  }
 }
 
 void ShowGameOverDialog() {
@@ -300,6 +317,9 @@ int CheckSnakeHeadCollision(int dx, int dy, struct TexObject* snake, size_t sSiz
   // Check if next head position is valid
   int newX = snake[0].x + dx;
   int newY = snake[0].y + dy;
+
+  // Hit the wall around the game field
+
 
   // Hit the snake body
   for(int i = 0; i < sSize; i++) {
@@ -389,9 +409,9 @@ void RecalculateSnakeGraphics(int dx, int dy, struct TexObject* snake, size_t sS
     int n_dy = snake[i+1].y - snake[i].y;
   
     // Debug
-    printf("p_x: %d, p_y: %d | ", p_dx, p_dy);
-    printf("n_x: %d, n_y: %d", n_dx, n_dy);
-    printf("\n");
+    //printf("p_x: %d, p_y: %d | ", p_dx, p_dy);
+    //printf("n_x: %d, n_y: %d", n_dx, n_dy);
+    //printf("\n");
 
     // Vertical
     if(p_dx == 0 && n_dx == 0 && ((p_dy == 1 && n_dy == 1) || (p_dy == -1 && n_dy == -1)))
@@ -412,7 +432,7 @@ void RecalculateSnakeGraphics(int dx, int dy, struct TexObject* snake, size_t sS
     else if(((p_dx == 1 && p_dy == 0 && n_dx == 0 && n_dy == -1) || (p_dx == 0 && p_dy == 1 && n_dx == -1 && n_dy == 0)))
       snake[i].texture = snakeTex[9];
   }
-  printf("\n");
+  //printf("\n");
   
   // Tail direction
   int tail_dx = snake[sSize-2].x - snake[sSize-1].x;
