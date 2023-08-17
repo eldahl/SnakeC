@@ -35,6 +35,7 @@ SDL_Surface* snakeImg[14];
 SDL_Texture* snakeTex[14];
 
 int grid_size = 44;
+int gameFieldSize = 20;
 
 // Width and height is assumed to be 44x44
 struct TexObject {
@@ -72,6 +73,8 @@ void MoveSnakeAndGrow(int, int, struct TexObject*, size_t*);
 void RecalculateSnakeGraphics(int dx, int dy, struct TexObject*, size_t);
 // Spawns food at a random position
 void SpawnFood(struct TexObject*, size_t, struct TexObject*); 
+// Renders a gray box with a small text saying that the game is paused.
+void RenderPauseDialog(SDL_Renderer* renderer, int gameFieldResolution);
 // Renders the background and the snake and the food
 void Render(SDL_Surface* ws);
 
@@ -87,8 +90,9 @@ int SDL_main(int argc, char** argv) {
 int main(int argc, char** argv) {
 
 #endif
-
-  if(SDL_CreateWindowAndRenderer(880, 880, 0, &window, &renderer) == -1) {
+  
+  int gameFieldResolution = gameFieldSize * grid_size;
+  if(SDL_CreateWindowAndRenderer(gameFieldResolution, gameFieldResolution, 0, &window, &renderer) == -1) {
     printf("Failed to create renderer and window...!: ");
 		return 0;
   }
@@ -222,11 +226,10 @@ int main(int argc, char** argv) {
       inputTime = 0;
     }
 
-    /*
+    // Render game pause dialog
     if(bGamePause) {
-      // Render game pause dialog
+      RenderPauseDialog(renderer, gameFieldResolution);
     }
-    */
 
     // Sleep for remaining time to hit 60 fps
     frameTime = SDL_GetTicks() - frameStart;
@@ -246,6 +249,22 @@ int main(int argc, char** argv) {
   SDL_VideoQuit();
   SDL_Quit();
   return 0;
+}
+
+void RenderPauseDialog(SDL_Renderer* renderer, int gameFieldResolution) {
+  int width = gameFieldResolution / 2;
+  int height = gameFieldResolution / 3;
+  int x = gameFieldResolution / 2 - width / 2;
+  int y = gameFieldResolution / 2 - height / 2;
+  
+  // Render grey pause box
+  SDL_Rect pauseBox = { x, y, width, height };
+  SDL_SetRenderDrawColor(renderer, 128, 128, 128, 255);
+  SDL_RenderFillRect(renderer, &pauseBox);
+  
+  // Render "Game paused text"
+
+  SDL_RenderPresent(renderer);
 }
 
 void SpawnFood(struct TexObject* snake, size_t snakeSize, struct TexObject* food) {
