@@ -1,4 +1,4 @@
-// Include string.h to avoid compiler error
+// Include string.h to avoid compiler error because of MacOS
 // https://stackoverflow.com/questions/34897803/implicit-declaration-of-function-memset-wimplicit-function-declaration
 #include <string.h>
 #include "lib/include/SDL2/SDL.h"
@@ -11,6 +11,7 @@
 #include "lib/include/SDL2/SDL_stdinc.h"
 #include "lib/include/SDL2/SDL_surface.h"
 #include "lib/include/SDL2/SDL_video.h"
+#include "lib/include/SDL2/SDL_ttf.h"
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -74,7 +75,7 @@ void RecalculateSnakeGraphics(int dx, int dy, struct TexObject*, size_t);
 // Spawns food at a random position
 void SpawnFood(struct TexObject*, size_t, struct TexObject*); 
 // Renders a gray box with a small text saying that the game is paused.
-void RenderPauseDialog(SDL_Renderer* renderer, int gameFieldResolution);
+void RenderPauseDialog(SDL_Renderer* renderer, TTF_Font* font, int gameFieldResolution);
 // Renders the background and the snake and the food
 void Render(SDL_Surface* ws);
 
@@ -91,6 +92,17 @@ int main(int argc, char** argv) {
 
 #endif
   
+  if (TTF_Init() == -1) {
+    printf("SDL_ttf could not initialize! SDL_ttf Error: %s\n", TTF_GetError());
+    return 1;
+  }
+
+  TTF_Font* font = TTF_OpenFont("font/NotoSans-Regular.ttf", 24);  // 24 is the font size
+  if (font == NULL) {
+      printf("Failed to load font! SDL_ttf Error: %s\n", TTF_GetError());
+      return 1;
+  }
+
   int gameFieldResolution = gameFieldSize * grid_size;
   if(SDL_CreateWindowAndRenderer(gameFieldResolution, gameFieldResolution, 0, &window, &renderer) == -1) {
     printf("Failed to create renderer and window...!: ");
@@ -228,7 +240,7 @@ int main(int argc, char** argv) {
 
     // Render game pause dialog
     if(bGamePause) {
-      RenderPauseDialog(renderer, gameFieldResolution);
+      RenderPauseDialog(renderer, font, gameFieldResolution);
     }
 
     // Sleep for remaining time to hit 60 fps
@@ -251,7 +263,7 @@ int main(int argc, char** argv) {
   return 0;
 }
 
-void RenderPauseDialog(SDL_Renderer* renderer, int gameFieldResolution) {
+void RenderPauseDialog(SDL_Renderer* renderer, TTF_Font* font, int gameFieldResolution) {
   int width = gameFieldResolution / 2;
   int height = gameFieldResolution / 3;
   int x = gameFieldResolution / 2 - width / 2;
@@ -263,6 +275,29 @@ void RenderPauseDialog(SDL_Renderer* renderer, int gameFieldResolution) {
   SDL_RenderFillRect(renderer, &pauseBox);
   
   // Render "Game paused text"
+  SDL_Color textColor = {255, 255, 255};
+  SDL_Surface* textSurface = TTF_RenderText_Solid(font, "Game paused!", textColor);
+  if(textSurface == NULL) {
+    printf("Unable to render text surface! SDL_ttf error: %s\n", TTF_GetError());
+    return;
+  }
+  
+  SDL_Texture* textTex = SDL_CreateTextureFromSurface(renderer, textSurface);
+  if(textTex == NULL) {
+    printf("Unable to create texture from rendered text! SDL Error: %s\n", SDL_GetError());
+    return;
+  }
+
+  int textWidth = textSurface->w;
+  int textHeight = textSurface->h;
+
+  int textX = x + width / 2 - textWidth / 2;
+  int textY = y + height * 0.1;
+
+  SDL_Rect textQuad = { textX, textY, textWidth, textHeight };
+  SDL_RenderCopy(renderer, textTex, NULL, &textQuad);
+  
+  SDL_FreeSurface(textSurface);
 
   SDL_RenderPresent(renderer);
 }

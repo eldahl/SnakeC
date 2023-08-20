@@ -14,7 +14,7 @@ rule link
 rule link-win
     command = clang $in -o $out -lShell32 -Xlinker /subsystem:windows
 
-build bin/snake: link obj/snake.o /usr/local/lib/libSDL2main.a /usr/local/lib/libSDL2.so
+build bin/snake: link obj/snake.o /usr/local/lib/libSDL2main.a /usr/local/lib/libSDL2.so /usr/lib/libSDL2_ttf.so
 build bin/snake-win: link-win obj/snake.o lib/libSDL2main.a lib/libSDL2.dll.a
 build bin/snake-mac: link obj/snake.o /usr/local/lib/libSDL2main.a /usr/local/lib/libSDL2.dylib
 
