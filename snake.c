@@ -108,6 +108,9 @@ int main(int argc, char** argv) {
     printf("Failed to create renderer and window...!: ");
 		return 0;
   }
+  
+  // Enable transparency in SDL
+  SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
   // Load images
   background = SDL_LoadBMP("res/gfx/grid.bmp");
@@ -240,6 +243,7 @@ int main(int argc, char** argv) {
 
     // Render game pause dialog
     if(bGamePause) {
+      Render(ws);
       RenderPauseDialog(renderer, font, gameFieldResolution);
     }
 
@@ -271,7 +275,7 @@ void RenderPauseDialog(SDL_Renderer* renderer, TTF_Font* font, int gameFieldReso
   
   // Render grey pause box
   SDL_Rect pauseBox = { x, y, width, height };
-  SDL_SetRenderDrawColor(renderer, 128, 128, 128, 255);
+  SDL_SetRenderDrawColor(renderer, 128, 128, 128, 128);
   SDL_RenderFillRect(renderer, &pauseBox);
   
   // Render "Game paused text"
