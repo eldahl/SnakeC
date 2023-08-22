@@ -1,6 +1,8 @@
 ~~- game field constraints~~
+- pause dialog
+~~- add truetype font~~
 - start dialog
 - game over dialog
-- finish game pause box (add truetype font) 
-- score (add truetype font)
+- finish game pause box
+- score
 - difficulty(speed) setting
