@@ -75,7 +75,7 @@ void RecalculateSnakeGraphics(int dx, int dy, struct TexObject*, size_t);
 // Spawns food at a random position
 void SpawnFood(struct TexObject*, size_t, struct TexObject*); 
 // Renders a gray box with a small text saying that the game is paused.
-void RenderPauseDialog(SDL_Renderer* renderer, TTF_Font* font, int gameFieldResolution);
+void RenderPauseBox(SDL_Renderer* renderer, TTF_Font* font, int gameFieldResolution);
 // Renders the background and the snake and the food
 void Render(SDL_Surface* ws);
 
@@ -244,7 +244,7 @@ int main(int argc, char** argv) {
     // Render game pause dialog
     if(bGamePause) {
       Render(ws);
-      RenderPauseDialog(renderer, font, gameFieldResolution);
+      RenderPauseBox(renderer, font, gameFieldResolution);
     }
 
     // Sleep for remaining time to hit 60 fps
@@ -267,15 +267,15 @@ int main(int argc, char** argv) {
   return 0;
 }
 
-void RenderPauseDialog(SDL_Renderer* renderer, TTF_Font* font, int gameFieldResolution) {
-  int width = gameFieldResolution / 2;
-  int height = gameFieldResolution / 3;
+void RenderPauseBox(SDL_Renderer* renderer, TTF_Font* font, int gameFieldResolution) {
+  int width = gameFieldResolution / 4;
+  int height = gameFieldResolution / 8;
   int x = gameFieldResolution / 2 - width / 2;
   int y = gameFieldResolution / 2 - height / 2;
   
   // Render grey pause box
   SDL_Rect pauseBox = { x, y, width, height };
-  SDL_SetRenderDrawColor(renderer, 128, 128, 128, 128);
+  SDL_SetRenderDrawColor(renderer, 128, 128, 128, 255);
   SDL_RenderFillRect(renderer, &pauseBox);
   
   // Render "Game paused text"
