@@ -35,8 +35,11 @@ SDL_Texture* backgroundTex;
 SDL_Surface* snakeImg[14];
 SDL_Texture* snakeTex[14];
 
+TTF_Font* font;
+
 int grid_size = 44;
 int gameFieldSize = 20;
+int gameFieldResolution = 0;
 
 // Width and height is assumed to be 44x44
 struct TexObject {
@@ -55,13 +58,13 @@ int bGamePause = 0;
 int bShowGameOverDialog = 0;
 int score = 0;
 
-/* ------ Functions ------ */
+/* ------ Forward declaration of Functions ------ */
 // Show the game over dialog
 void ShowGameOverDialog();
 // Called when the snake bites its own tail or hits the edge of the playing field
 void GameOverReset();
 // Surface to render to, snake parts array, length of snake array
-void DrawSnake(SDL_Surface*, struct TexObject*, size_t);
+void DrawSnake(struct TexObject*, size_t);
 // Checks for snake head collisions
 int CheckSnakeHeadCollision(int, int, struct TexObject*, size_t, struct TexObject*);
 // Move the snake head.
@@ -77,8 +80,11 @@ void SpawnFood(struct TexObject*, size_t, struct TexObject*);
 // Renders a gray box with a small text saying that the game is paused.
 void RenderPauseBox(SDL_Renderer* renderer, TTF_Font* font, int gameFieldResolution);
 // Renders the background and the snake and the food
-void Render(SDL_Surface* ws);
+void Render();
 
+/////////////////
+// Entry point //
+/////////////////
 #ifdef _WIN32
 int SDL_main(int argc, char** argv) {
 
@@ -97,13 +103,13 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  TTF_Font* font = TTF_OpenFont("font/NotoSans-Regular.ttf", 24);  // 24 is the font size
+  font = TTF_OpenFont("font/NotoSans-Regular.ttf", 24);  // 24 is the font size
   if (font == NULL) {
       printf("Failed to load font! SDL_ttf Error: %s\n", TTF_GetError());
       return 1;
   }
 
-  int gameFieldResolution = gameFieldSize * grid_size;
+  gameFieldResolution = gameFieldSize * grid_size;
   if(SDL_CreateWindowAndRenderer(gameFieldResolution, gameFieldResolution, 0, &window, &renderer) == -1) {
     printf("Failed to create renderer and window...!: ");
 		return 0;
@@ -166,9 +172,7 @@ int main(int argc, char** argv) {
   food.y = 5;
   food.texture = appleTex;
 
-  SDL_Surface* ws = SDL_GetWindowSurface(window);
-
-  Render(ws);
+  Render();
   
   // For calculating sleep time
   const int fps = 60;
@@ -226,33 +230,34 @@ int main(int argc, char** argv) {
       // Hit a piece food, snake ate food, and grows by one leaving the body at same position.
       else if(hit == 1) {
         MoveSnakeAndGrow(dx, dy, snake, &snakeSize);          
-        printf("Ate food\n");
         SpawnFood(snake, snakeSize, &food);
+        score++;
+        printf("Ate food | Score: %d\n", score);
       }
       // Hit the snake body
       else if(hit == -1) {
         // TODO: Make a game over screen
         // Game Over dialog
         ShowGameOverDialog();
-
         GameOverReset();
+
+        // Reset score - TODO: Add to leaderboard before resetting
+        score = 0;
 
         // Rerender in new game position, specifying dx and dy as 0's 
         // so the snake head is not looking the wrong way
         RecalculateSnakeGraphics(0, 0, snake, snakeSize);
-        Render(ws);
+        Render();
         continue;
       }
       RecalculateSnakeGraphics(dx, dy, snake, snakeSize);
-      Render(ws);      
+      Render();      
       
       inputTime = 0;
     }
 
-    // Render game pause dialog
     if(bGamePause) {
-      Render(ws);
-      RenderPauseBox(renderer, font, gameFieldResolution);
+      Render();
     }
 
     // Sleep for remaining time to hit 60 fps
@@ -273,6 +278,40 @@ int main(int argc, char** argv) {
   SDL_VideoQuit();
   SDL_Quit();
   return 0;
+}
+
+void RenderScore(SDL_Renderer* renderer, TTF_Font* font, int gameFieldResolution) {
+  int width = gameFieldResolution / 4;
+  int height = gameFieldResolution / 8;
+
+  // Print formatted into a buffer
+  // Note: sprintf is insecure as there is no bounds checking. Should not be used.
+  // Use snprintf().
+  char scoreTextBuf[256];
+  snprintf(scoreTextBuf, sizeof(scoreTextBuf), "%d", score);
+  
+  SDL_Color textColor = {255, 255, 255};
+  SDL_Surface* textSurface = TTF_RenderText_Solid(font, "Score: ", textColor);
+  SDL_Surface* scoreSurface = TTF_RenderText_Solid(font, scoreTextBuf, textColor);
+  if(textSurface == NULL || scoreSurface == NULL) {
+    printf("Unable to render text or score surface! SDL_ttf error: %s\n", TTF_GetError());
+    return;
+  }
+
+  SDL_Texture* textTex = SDL_CreateTextureFromSurface(renderer, textSurface);
+  SDL_Texture* scoreTex = SDL_CreateTextureFromSurface(renderer, scoreSurface);
+  if(textTex == NULL || scoreTex == NULL) {
+    printf("Unable to create texture from rendered text! SDL Error: %s\n", SDL_GetError());
+    return;
+  }
+
+  // scoreQuad x is the width of textQuad. It displays the score after the colon.
+  SDL_Rect textQuad = { 0, 0, textSurface->w, textSurface->h };
+  SDL_Rect scoreQuad = { textSurface->w, 0, scoreSurface->w, scoreSurface->h };
+  SDL_RenderCopy(renderer, textTex, NULL, &textQuad);
+  SDL_RenderCopy(renderer, scoreTex, NULL, &scoreQuad);
+  SDL_FreeSurface(textSurface);
+  SDL_FreeSurface(scoreSurface);
 }
 
 void RenderPauseBox(SDL_Renderer* renderer, TTF_Font* font, int gameFieldResolution) {
@@ -308,10 +347,7 @@ void RenderPauseBox(SDL_Renderer* renderer, TTF_Font* font, int gameFieldResolut
 
   SDL_Rect textQuad = { textX, textY, textWidth, textHeight };
   SDL_RenderCopy(renderer, textTex, NULL, &textQuad);
-  
   SDL_FreeSurface(textSurface);
-
-  SDL_RenderPresent(renderer);
 }
 
 void SpawnFood(struct TexObject* snake, size_t snakeSize, struct TexObject* food) {
@@ -360,22 +396,30 @@ void GameOverReset() {
   snakeSize = 3;  
 }
 
-void DrawSnake(SDL_Surface* surface, struct TexObject* snake, size_t sSize) {
+void DrawSnake(struct TexObject* snake, size_t sSize) {
   for(int i = 0; i < sSize; i++) {
     SDL_Rect rect = { snake[i].x * grid_size, snake[i].y * grid_size, 44, 44 };
     SDL_RenderCopy(renderer, snake[i].texture, NULL, &rect);
   }
 }
 
-void Render(SDL_Surface* ws) {
+void Render() {
   // Render background
   SDL_Rect rect = { 0, 0, 880, 880};
   SDL_RenderCopy(renderer, backgroundTex, NULL, &rect);
   
-  DrawSnake(ws, snake, snakeSize);
+  DrawSnake(snake, snakeSize);
 
   SDL_Rect rectFood = { food.x * grid_size, food.y * grid_size, 44, 44};
   SDL_RenderCopy(renderer, food.texture, NULL, &rectFood);
+ 
+  RenderScore(renderer, font, gameFieldResolution);
+  // Render game pause dialog
+  if(bGamePause) {
+    RenderPauseBox(renderer, font, gameFieldResolution);
+  }
+
+  // One render present per frame
   SDL_RenderPresent(renderer);
 }
 

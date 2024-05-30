@@ -1,8 +1,12 @@
-~~- game field constraints~~
-~~- pause box~~
-~~- add truetype font~~
+~~game field constraints~~
+~~pause box~~
+~~add truetype font~~
+~~score~~
+~~Fix glitching of pause dialog~~
+~~game over dialog~~
+~~finish game pause box~~
+~~Find a way to render score to text~~
+	snprintf!!! (sprintf is insecure as there is no bounds checking)
+~~show score in overlay~~
 - start dialog
-- game over dialog
-- finish game pause box
-- score
 - difficulty(speed) setting
