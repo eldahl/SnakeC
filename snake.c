@@ -111,6 +111,7 @@ int main(int argc, char** argv) {
   
   // Enable transparency in SDL
   SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+  SDL_RenderSetLogicalSize(renderer, gameFieldResolution, gameFieldResolution);
 
   // Load images
   background = SDL_LoadBMP("res/gfx/grid.bmp");
@@ -136,9 +137,16 @@ int main(int argc, char** argv) {
   backgroundTex = SDL_CreateTextureFromSurface(renderer, background);   
   appleTex = SDL_CreateTextureFromSurface(renderer, apple);
   
+  // Set Texture Scaling mode to anisotropic filtering
+  SDL_SetTextureScaleMode(backgroundTex, 2);
+  SDL_SetTextureScaleMode(appleTex, 2);
+  
   // Create Snake textures from the SDL_Surfaces
   for(int i = 0; i < 14; i++) {
-    snakeTex[i] = SDL_CreateTextureFromSurface(renderer, snakeImg[i]);  
+    snakeTex[i] = SDL_CreateTextureFromSurface(renderer, snakeImg[i]);
+    
+    // Set Texture Scaling mode to anisotropic filtering
+    SDL_SetTextureScaleMode(snakeTex[i], 2);
   }
   
   // Starting snake
